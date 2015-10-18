@@ -1,0 +1,29 @@
+{
+  "name": "dat-http-replicator",
+  "version": "1.0.0",
+  "description": "push/pull a dat repo over a HTTP REST API",
+  "main": "index.js",
+  "scripts": {
+    "test": "standard"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/maxogden/dat-http-replicator.git"
+  },
+  "keywords": [
+    "dat"
+  ],
+  "author": "max ogden",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/maxogden/dat-http-replicator/issues"
+  },
+  "homepage": "https://github.com/maxogden/dat-http-replicator#readme",
+  "dependencies": {
+    "got": "^4.2.0"
+  },
+  "devDependencies": {
+    "level": "^1.3.0",
+    "request": "^2.65.0"
+  }
+}
