@@ -13,10 +13,18 @@ var server = http.createServer(function (req, res) {
     match.once('data', function (buff) {
       console.log('sending matches:', buff.length, 'bytes')
       res.end(buff)
-      match.destroy()
     })
-    req.pipe(match)
-    match.on('error', function (err) {}) // ignore
+    req.pipe(concat(function (buff) {
+      match.end(buff)
+    }))
+    match.on('error', function (err) {
+      console.log('match error', error)
+      res.end()
+    })
+    req.on('error', function (err) {
+      console.log('request error', err)
+      res.end()
+    })
     return
   }
   
