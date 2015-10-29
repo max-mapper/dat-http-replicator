@@ -43,7 +43,7 @@ function onpull (dat, req, res) {
     res.setHeader('X-Nodes', '' + rs.length)
     if (gzipped) res.setHeader('Content-Encoding', 'gzip')
 
-    if (gzipped) pump(rs, zlib.createGzip(), encode, res)
+    if (gzipped) pump(rs, encode, zlib.createGzip(), res)
     else pump(rs, encode, res)
   })
 

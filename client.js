@@ -72,8 +72,8 @@ function client (dat, url, opts, cb) {
       var decode = lpstream.decode()
       var gzipped = res.headers['content-encoding'] === 'gzip'
 
-      if (gzipped) pump(res, zlib.createGunzip(), decode)
-      else pump(res, decode)
+      if (gzipped) pump(res, zlib.createGunzip(), decode, onerror)
+      else pump(res, decode, onerror)
 
       progress.pulled.length = Number(res.headers['x-nodes'])
       progress.emit('pull', progress.pulled)
@@ -86,6 +86,10 @@ function client (dat, url, opts, cb) {
     })
 
     req.end()
+
+    function onerror (err) {
+      if (err) done(err)
+    }
 
     function done (err) {
       if (called) return
