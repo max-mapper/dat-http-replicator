@@ -21,7 +21,8 @@
   "homepage": "https://github.com/maxogden/dat-http-replicator#readme",
   "dependencies": {
     "length-prefixed-stream": "^1.4.0",
-    "pump": "^1.0.1"
+    "pump": "^1.0.1",
+    "xtend": "^4.0.0"
   },
   "devDependencies": {
     "dat-graph": "^1.0.2",

@@ -1,10 +1,7 @@
-var http = require('http')
-var https = require('https')
-var zlib = require('zlib')
 var lpstream = require('length-prefixed-stream')
 var pump = require('pump')
 var events = require('events')
-var parseUrl = require('url').parse
+var request = require('./request.js')
 
 var USER_AGENT = 'dat-http-replicator'
 
@@ -13,13 +10,7 @@ module.exports = client
 function client (dat, url, opts, cb) {
   if (typeof opts === 'function') return client(dat, url, null, opts)
   if (!opts) opts = {}
-  if (!/:\/\//.test(url)) url = 'http://' + url
 
-  var parsed = parseUrl(url)
-  var host = parsed.hostname
-  var port = parsed.port
-  var name = parsed.pathname || '/'
-  var mod = parsed.protocol === 'https:' ? https : http
   var progress = new events.EventEmitter()
   var mode = opts.mode || 'sync'
 
@@ -54,26 +45,18 @@ function client (dat, url, opts, cb) {
 
   function pull (since, cb) {
     var called = false
-    var req = mod.request({
-      method: 'GET',
-      path: name + 'nodes?since=' + since.map(toString).join(','),
-      host: host,
-      port: port,
+    var req = request({
+      url: url + '/' + name + 'nodes?since=' + since.map(toString).join(','),
       headers: {
         'Accept-Encoding': 'gzip',
         'User-Agent': USER_AGENT
       }
-    })
-
-    req.on('error', done)
-    req.on('response', function (res) {
+    }, function (err, res) {
+      if (err) return done(err)
       if (!okResponse(res)) return done(new Error('Remote returned ' + res.statusCode))
 
       var decode = lpstream.decode()
-      var gzipped = res.headers['content-encoding'] === 'gzip'
-
-      if (gzipped) pump(res, zlib.createGunzip(), decode, onerror)
-      else pump(res, decode, onerror)
+      pump(res, decode, onerror)
 
       progress.pulled.length = Number(res.headers['x-nodes'])
       progress.emit('pull', progress.pulled)
@@ -101,23 +84,19 @@ function client (dat, url, opts, cb) {
   function push (since, cb) {
     var rs = dat.createReadStream({since: since, binary: true})
 
-    rs.on('error', cb)
     rs.on('ready', function () {
       rs.removeListener('error', cb)
 
-      var req = mod.request({
+      var req = request({
         method: 'POST',
-        path: name + 'nodes',
-        host: host,
-        port: port,
+        url: url + '/' + name + 'nodes',
         headers: {
           'X-Nodes': '' + rs.length,
           'Content-Encoding': 'gzip',
           'User-Agent': USER_AGENT
         }
-      })
-
-      req.on('response', function (res) {
+      }, function (err, res) {
+        if (err) return cb(err)
         res.resume()
         if (!okResponse(res)) return cb(new Error('Remote returned ' + res.statusCode))
         cb()
@@ -163,17 +142,14 @@ function client (dat, url, opts, cb) {
 
     function diffRequest () {
       var encode = lpstream.encode()
-      var req = mod.request({
+      var req = request({
         method: 'POST',
-        path: name + 'diff',
-        host: host,
-        port: port,
+        url: url + '/' + name + 'diff',
         headers: {
           'User-Agent': USER_AGENT
         }
-      })
-
-      req.on('response', function (res) {
+      }, function (err, res) {
+        if (err) return onerror(err)
         if (!okResponse(res)) return onerror(new Error('Remote returned ' + res.statusCode))
 
         var decode = lpstream.decode()
