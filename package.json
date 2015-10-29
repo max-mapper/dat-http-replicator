@@ -4,7 +4,7 @@
   "description": "push/pull a dat repo over a HTTP REST API",
   "main": "index.js",
   "scripts": {
-    "test": "standard"
+    "test": "standard && tape test.js"
   },
   "repository": {
     "type": "git",
@@ -22,5 +22,10 @@
   "dependencies": {
     "length-prefixed-stream": "^1.4.0",
     "pump": "^1.0.1"
+  },
+  "devDependencies": {
+    "dat-graph": "^1.0.2",
+    "memdb": "^1.0.1",
+    "tape": "^4.2.2"
   }
 }
