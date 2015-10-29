@@ -1,8 +1,8 @@
 var zlib = require('zlib')
-var events = require('events')
 var lpstream = require('length-prefixed-stream')
 var pump = require('pump')
 var request = require('./request.js')
+var Progress = require('./progress.js')
 
 var USER_AGENT = 'dat-http-replicator'
 
@@ -12,11 +12,9 @@ function client (dat, url, opts, cb) {
   if (typeof opts === 'function') return client(dat, url, null, opts)
   if (!opts) opts = {}
 
-  var progress = new events.EventEmitter()
+  var progress = Progress()
   var mode = opts.mode || 'sync'
-
-  progress.pushed = {transferred: 0, length: 0}
-  progress.pulled = {transferred: 0, length: 0}
+  if (/\/$/.test(url)) url = url.slice(0, -1)
 
   if (cb) {
     progress.on('end', cb)
@@ -35,8 +33,7 @@ function client (dat, url, opts, cb) {
     function done (err) {
       if (err) error = err
       if (--missing) return
-      if (error) progress.emit('error', error)
-      else progress.emit('end')
+      progress.end(error)
     }
   })
 
@@ -59,13 +56,12 @@ function client (dat, url, opts, cb) {
 
       if (gzipped) pump(res, zlib.createGunzip(), decode, onerror)
       else pump(res, decode, onerror)
-      progress.pulled.length = Number(res.headers['x-nodes'])
-      progress.emit('pull', progress.pulled)
 
       pump(decode, dat.createWriteStream({binary: true}), done)
+
+      progress.pullInit(Number(res.headers['x-nodes']))
       decode.on('data', function () {
-        progress.pulled.transferred++
-        progress.emit('pull', progress.pulled)
+        progress.pull()
       })
     })
 
@@ -103,14 +99,11 @@ function client (dat, url, opts, cb) {
       })
 
       pump(rs, lpstream.encode(), zlib.createGzip(), req, onerror)
-      rs.on('data', onpush)
-      progress.pushed.length = rs.length
-      progress.emit('push', progress.pushed)
 
-      function onpush () {
-        progress.pushed.transferred++
-        progress.emit('push', progress.pushed)
-      }
+      progress.pushInit(rs.length)
+      rs.on('data', function () {
+        progress.push()
+      })
 
       function onerror (err) {
         if (err) return cb(err)

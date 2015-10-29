@@ -15,7 +15,16 @@ var replicator = require('dat-http-replicator')
 var http = require('http')
 
 var server = http.createServer(function (req, res) {
-  replicator.server(datGraphInstance, req, res)
+  var progress = replicator.server(datGraphInstance, req, res)
+  if (!progress) return
+
+  progress.on('pull', function () {
+    console.log('server pulled', progress.pulled)
+  })
+
+  progress.on('push', function () {
+    console.log('server pushed', progress.pushed)
+  })
 })
 
 server.listen(9000)
@@ -28,11 +37,11 @@ var replicator = require('dat-http-replicator')
 var progress = replicator(datGraphInstance, 'http://localhost:9000')
 
 progress.on('pull', function () {
-  console.log('pulled', progress.pulled)
+  console.log('client pulled', progress.pulled)
 })
 
 progress.on('push', function () {
-  console.log('pushed', progress.pushed)
+  console.log('client pushed', progress.pushed)
 })
 
 progress.on('end', function () {
@@ -46,7 +55,7 @@ progress.on('error', function (err) {
 
 ## API
 
-#### `replicator.server(datGraphInstance, req, res, [opts])`
+#### `progress = replicator.server(datGraph, req, res, [opts], [cb])`
 
 Setup a server http handler. Options include:
 
@@ -57,7 +66,10 @@ Setup a server http handler. Options include:
 }
 ```
 
-#### `progress = replicator.client(datGraphInstance, url, [opts], [callback])`
+Note that the progress monitor will be `null` if this is an endpoint
+without progress monitoring support.
+
+#### `progress = replicator.client(datGraph, url, [opts], [cb])`
 
 Make a replication request. Options include:
 
@@ -66,6 +78,8 @@ Make a replication request. Options include:
   mode: 'push' | 'pull' | 'sync' // defaults to sync
 }
 ```
+
+## Progress monitoring
 
 The progress monitor returned will emit `push` and `pull` when you send a graph node
 or receive a graph node. The progress events look like this
