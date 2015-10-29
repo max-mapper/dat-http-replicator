@@ -1,9 +1,6 @@
 var http = require('http')
 var https = require('https')
-var zlib = require('zlib')
 var parseUrl = require('url').parse
-
-var pump = require('pump')
 var xtend = require('xtend')
 
 module.exports = function (opts, cb) {
@@ -18,31 +15,26 @@ module.exports = function (opts, cb) {
   var parsed = parseUrl(url)
   var host = parsed.hostname
   var port = parsed.port
-  var name = parsed.pathname || '/'
+  var path = parsed.path
   var mod = parsed.protocol === 'https:' ? https : http
-    
+
   var defaults = {
     method: 'GET',
     host: host,
+    path: path,
     port: port
   }
-  
-  var req = mod.request(xtend(defaults, opts))
+
+  var reqOpts = xtend(defaults, opts)
+  var req = mod.request(reqOpts)
 
   req.on('error', function (err) {
     return cb(err)
   })
-  
+
   req.on('response', function (res) {
-    var gzipped = res.headers['content-encoding'] === 'gzip'
-    if (gzipped) {
-      var gunzip = zlib.createGunzip()
-      pump(decode, gunzip)
-      cb(null, gunzip)
-    } else {
-      cb(null, res)      
-    }
+    cb(null, res)
   })
-  
+
   return req
 }

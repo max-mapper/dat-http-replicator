@@ -1,6 +1,7 @@
+var zlib = require('zlib')
+var events = require('events')
 var lpstream = require('length-prefixed-stream')
 var pump = require('pump')
-var events = require('events')
 var request = require('./request.js')
 
 var USER_AGENT = 'dat-http-replicator'
@@ -13,8 +14,6 @@ function client (dat, url, opts, cb) {
 
   var progress = new events.EventEmitter()
   var mode = opts.mode || 'sync'
-
-  if (!/\/$/.test(name)) name += '/'
 
   progress.pushed = {transferred: 0, length: 0}
   progress.pulled = {transferred: 0, length: 0}
@@ -46,7 +45,7 @@ function client (dat, url, opts, cb) {
   function pull (since, cb) {
     var called = false
     var req = request({
-      url: url + '/' + name + 'nodes?since=' + since.map(toString).join(','),
+      url: url + '/nodes?since=' + since.map(toString).join(','),
       headers: {
         'Accept-Encoding': 'gzip',
         'User-Agent': USER_AGENT
@@ -56,8 +55,10 @@ function client (dat, url, opts, cb) {
       if (!okResponse(res)) return done(new Error('Remote returned ' + res.statusCode))
 
       var decode = lpstream.decode()
-      pump(res, decode, onerror)
+      var gzipped = res.headers['content-encoding'] === 'gzip'
 
+      if (gzipped) pump(res, zlib.createGunzip(), decode, onerror)
+      else pump(res, decode, onerror)
       progress.pulled.length = Number(res.headers['x-nodes'])
       progress.emit('pull', progress.pulled)
 
@@ -86,10 +87,9 @@ function client (dat, url, opts, cb) {
 
     rs.on('ready', function () {
       rs.removeListener('error', cb)
-
       var req = request({
         method: 'POST',
-        url: url + '/' + name + 'nodes',
+        url: url + '/nodes',
         headers: {
           'X-Nodes': '' + rs.length,
           'Content-Encoding': 'gzip',
@@ -142,9 +142,10 @@ function client (dat, url, opts, cb) {
 
     function diffRequest () {
       var encode = lpstream.encode()
+      console.log('diffrequest')
       var req = request({
         method: 'POST',
-        url: url + '/' + name + 'diff',
+        url: url + '/diff',
         headers: {
           'User-Agent': USER_AGENT
         }
