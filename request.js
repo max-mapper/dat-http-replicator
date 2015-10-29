@@ -3,38 +3,51 @@ var https = require('https')
 var parseUrl = require('url').parse
 var xtend = require('xtend')
 
-module.exports = function (opts, cb) {
-  if (typeof opts === 'undefined') throw new Error('Must supply url')
-  if (typeof cb === 'undefined') throw new Error('Must supply callback')
-  if (typeof opts === 'string') opts = {url: opts}
-  var url = opts.url
-  delete opts.url
+module.exports = requester('GET')
+module.exports.get = module.exports
+module.exports.post = requester('POST')
+module.exports.put = requester('PUT')
+module.exports.del = requester('DELETE')
+module.exports.head = requester('HEAD')
 
-  if (!/:\/\//.test(url)) url = 'http://' + url
+function requester (method) {
+  return function httpRequest (url, opts, cb) {
+    if (typeof opts === 'function') return httpRequest(url, {}, opts)
+    if (typeof url === 'undefined') throw new Error('Must supply url')
+    if (typeof cb === 'undefined') throw new Error('Must supply callback')
 
-  var parsed = parseUrl(url)
-  var host = parsed.hostname
-  var port = parsed.port
-  var path = parsed.path
-  var mod = parsed.protocol === 'https:' ? https : http
+    if (!/:\/\//.test(url)) url = 'http://' + url
 
-  var defaults = {
-    method: 'GET',
-    host: host,
-    path: path,
-    port: port
+    var parsed = parseUrl(url)
+    var host = parsed.hostname
+    var port = parsed.port
+    var path = parsed.path
+    var mod = parsed.protocol === 'https:' ? https : http
+    var called = false
+
+    var defaults = {
+      method: method,
+      host: host,
+      path: path,
+      port: port
+    }
+
+    var reqOpts = xtend(defaults, opts)
+    var req = mod.request(reqOpts)
+
+    req.on('error', done)
+    req.on('response', function (res) {
+      done(null, res)
+    })
+
+    if (method === 'GET' || method === 'HEAD' || method === 'DELETE') req.end()
+    return req
+
+    function done (err, res) {
+      if (called) return
+      called = true
+      if (err) return cb(err)
+      cb(null, res)
+    }
   }
-
-  var reqOpts = xtend(defaults, opts)
-  var req = mod.request(reqOpts)
-
-  req.on('error', function (err) {
-    return cb(err)
-  })
-
-  req.on('response', function (res) {
-    cb(null, res)
-  })
-
-  return req
 }

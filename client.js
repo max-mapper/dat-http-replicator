@@ -41,8 +41,8 @@ function client (dat, url, opts, cb) {
 
   function pull (since, cb) {
     var called = false
-    var req = request({
-      url: url + '/nodes?since=' + since.map(toString).join(','),
+
+    request(url + '/nodes?since=' + since.map(toString).join(','), {
       headers: {
         'Accept-Encoding': 'gzip',
         'User-Agent': USER_AGENT
@@ -65,8 +65,6 @@ function client (dat, url, opts, cb) {
       })
     })
 
-    req.end()
-
     function onerror (err) {
       if (err) done(err)
     }
@@ -83,9 +81,8 @@ function client (dat, url, opts, cb) {
 
     rs.on('ready', function () {
       rs.removeListener('error', cb)
-      var req = request({
-        method: 'POST',
-        url: url + '/nodes',
+
+      var req = request.post(url + '/nodes', {
         headers: {
           'X-Nodes': '' + rs.length,
           'Content-Encoding': 'gzip',
@@ -135,10 +132,7 @@ function client (dat, url, opts, cb) {
 
     function diffRequest () {
       var encode = lpstream.encode()
-      console.log('diffrequest')
-      var req = request({
-        method: 'POST',
-        url: url + '/diff',
+      var req = request.post(url + '/diff', {
         headers: {
           'User-Agent': USER_AGENT
         }
