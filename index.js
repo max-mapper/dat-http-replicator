@@ -1,6 +1,2 @@
-module.exports = replicator
-
-function replicator (dag, opts) {
-  if (!opts) opts = {}
-  
-}
+exports.server = require('./server')
+exports.client = require('./client')
