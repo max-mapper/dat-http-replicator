@@ -1,6 +1,6 @@
 {
   "name": "dat-http-replicator",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "push/pull a dat repo over a HTTP REST API",
   "main": "index.js",
   "scripts": {
