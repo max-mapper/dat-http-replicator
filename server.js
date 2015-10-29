@@ -5,13 +5,15 @@ var zlib = require('zlib')
 
 module.exports = server
 
-function server (dat, req, res) {
+function server (dat, req, res, opts) {
+  if (!opts) opts = {}
+
   var pathname = parseUrl(req.url).pathname
   var route = pathname.slice(pathname.lastIndexOf('/') + 1)
 
   if (route === 'diff' && req.method === 'POST') return ondiff(dat, req, res)
-  if (route === 'nodes' && req.method === 'POST') return onpush(dat, req, res)
-  if (route === 'nodes' && req.method === 'GET') return onpull(dat, req, res)
+  if (route === 'nodes' && req.method === 'POST' && !opts.readonly) return onpush(dat, req, res)
+  if (route === 'nodes' && req.method === 'GET' && !opts.writeonly) return onpull(dat, req, res)
 
   res.statusCode = 404
   res.end()

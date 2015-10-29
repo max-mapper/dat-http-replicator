@@ -105,6 +105,27 @@ tape('push', function (t) {
   }
 })
 
+tape('readonly', function (t) {
+  var serverDat = datGraph(memdb())
+  var clientDat = datGraph(memdb())
+
+  var server = http.createServer(function (req, res) {
+    replicator.server(serverDat, req, res, {readonly: true})
+  })
+
+  clientDat.append('verden', run)
+
+  function run () {
+    server.listen(0, function () {
+      replicator.client(clientDat, 'http://localhost:' + server.address().port, {mode: 'push'}, function (err) {
+        server.close()
+        t.ok(err, 'had error')
+        t.end()
+      })
+    })
+  }
+})
+
 function matches (t, dat, expected) {
   var datas = []
   var rs = dat.createReadStream()

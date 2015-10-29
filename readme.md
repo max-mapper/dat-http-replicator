@@ -46,9 +46,16 @@ progress.on('error', function (err) {
 
 ## API
 
-#### `replicator.server(datGraphInstance, req, res)`
+#### `replicator.server(datGraphInstance, req, res, [opts])`
 
-Setup a server http handler
+Setup a server http handler. Options include:
+
+``` js
+{
+  readonly: true, // do not allow pushes
+  writeonly: true // do not allow pulls
+}
+```
 
 #### `progress = replicator.client(datGraphInstance, url, [opts], [callback])`
 
