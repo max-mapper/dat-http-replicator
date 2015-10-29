@@ -4,6 +4,8 @@
 npm install dat-http-replicator
 ```
 
+[![build status](http://img.shields.io/travis/maxogden/dat-http-replicator.svg?style=flat)](http://travis-ci.org/maxogden/dat-http-replicator)
+
 ## Usage
 
 On a server
